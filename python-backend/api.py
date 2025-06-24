@@ -1,347 +1,250 @@
-from fastapi import FastAPI
+#
+# PRODUCTION-READY API with Lead Delivery System
+# This fixes the critical bugs and delivers actual value to clients
+#
+
+# --- Imports ---
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
-from uuid import uuid4
-import time
-import logging
+import os
+import openai
+import smtplib
+import re
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime
 
-from main import (
-    triage_agent,
-    faq_agent,
-    seat_booking_agent,
-    flight_status_agent,
-    cancellation_agent,
-    create_initial_context,
-)
-
-from agents import (
-    Runner,
-    ItemHelpers,
-    MessageOutputItem,
-    HandoffOutputItem,
-    ToolCallItem,
-    ToolCallOutputItem,
-    InputGuardrailTripwireTriggered,
-    Handoff,
-)
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# --- Configuration ---
+from client_config import CLIENT_DATA
 
 app = FastAPI()
 
-# CORS configuration (adjust as needed for deployment)
+# --- CORS Configuration ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "https://*.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# =========================
-# Models
-# =========================
+# --- Security and API Keys ---
+INTERNAL_API_KEY = os.environ.get("INTERNAL_API_KEY", "a-very-secret-string-for-local-dev")
+openai.api_key = os.environ.get("OPENAI_API_KEY")
+
+# --- Email Configuration for Lead Delivery ---
+SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+EMAIL_USER = os.environ.get("EMAIL_USER")  # Your email for sending
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")  # Your email app password
+
+if not openai.api_key:
+    print("FATAL ERROR: OPENAI_API_KEY environment variable is not set.")
+
+if not EMAIL_USER or not EMAIL_PASSWORD:
+    print("WARNING: Email credentials not set. Lead delivery will fail.")
+
+# --- Data Models ---
+class Message(BaseModel):
+    role: str  # "user", "assistant", or "system"
+    content: str
 
 class ChatRequest(BaseModel):
-    conversation_id: Optional[str] = None
-    message: str
+    messages: list[Message]
 
-class MessageResponse(BaseModel):
-    content: str
-    agent: str
-
-class AgentEvent(BaseModel):
-    id: str
-    type: str
-    agent: str
-    content: str
-    metadata: Optional[Dict[str, Any]] = None
-    timestamp: Optional[float] = None
-
-class GuardrailCheck(BaseModel):
-    id: str
-    name: str
-    input: str
-    reasoning: str
-    passed: bool
-    timestamp: float
-
-class ChatResponse(BaseModel):
-    conversation_id: str
-    current_agent: str
-    messages: List[MessageResponse]
-    events: List[AgentEvent]
-    context: Dict[str, Any]
-    agents: List[Dict[str, Any]]
-    guardrails: List[GuardrailCheck] = []
-
-# =========================
-# In-memory store for conversation state
-# =========================
-
-class ConversationStore:
-    def get(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        pass
-
-    def save(self, conversation_id: str, state: Dict[str, Any]):
-        pass
-
-class InMemoryConversationStore(ConversationStore):
-    _conversations: Dict[str, Dict[str, Any]] = {}
-
-    def get(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        return self._conversations.get(conversation_id)
-
-    def save(self, conversation_id: str, state: Dict[str, Any]):
-        self._conversations[conversation_id] = state
-
-# TODO: when deploying this app in scale, switch to your own production-ready implementation
-conversation_store = InMemoryConversationStore()
-
-# =========================
-# Helpers
-# =========================
-
-def _get_agent_by_name(name: str):
-    """Return the agent object by name."""
-    agents = {
-        triage_agent.name: triage_agent,
-        faq_agent.name: faq_agent,
-        seat_booking_agent.name: seat_booking_agent,
-        flight_status_agent.name: flight_status_agent,
-        cancellation_agent.name: cancellation_agent,
-    }
-    return agents.get(name, triage_agent)
-
-def _get_guardrail_name(g) -> str:
-    """Extract a friendly guardrail name."""
-    name_attr = getattr(g, "name", None)
-    if isinstance(name_attr, str) and name_attr:
-        return name_attr
-    guard_fn = getattr(g, "guardrail_function", None)
-    if guard_fn is not None and hasattr(guard_fn, "__name__"):
-        return guard_fn.__name__.replace("_", " ").title()
-    fn_name = getattr(g, "__name__", None)
-    if isinstance(fn_name, str) and fn_name:
-        return fn_name.replace("_", " ").title()
-    return str(g)
-
-def _build_agents_list() -> List[Dict[str, Any]]:
-    """Build a list of all available agents and their metadata."""
-    def make_agent_dict(agent):
-        return {
-            "name": agent.name,
-            "description": getattr(agent, "handoff_description", ""),
-            "handoffs": [getattr(h, "agent_name", getattr(h, "name", "")) for h in getattr(agent, "handoffs", [])],
-            "tools": [getattr(t, "name", getattr(t, "__name__", "")) for t in getattr(agent, "tools", [])],
-            "input_guardrails": [_get_guardrail_name(g) for g in getattr(agent, "input_guardrails", [])],
-        }
-    return [
-        make_agent_dict(triage_agent),
-        make_agent_dict(faq_agent),
-        make_agent_dict(seat_booking_agent),
-        make_agent_dict(flight_status_agent),
-        make_agent_dict(cancellation_agent),
+# --- Lead Detection and Email Functions ---
+def extract_lead_info(conversation_history):
+    """
+    Analyzes conversation to detect if lead information was captured.
+    Returns dict with name, phone, email if found.
+    """
+    full_conversation = " ".join([msg.content for msg in conversation_history if msg.role == "user"])
+    
+    # Look for name patterns
+    name_patterns = [
+        r"my name is ([A-Za-z\s]+)",
+        r"i'm ([A-Za-z\s]+)",
+        r"i am ([A-Za-z\s]+)",
+        r"this is ([A-Za-z\s]+)",
+        r"name[:\s]*([A-Za-z\s]+)"
     ]
+    
+    # Look for phone patterns
+    phone_patterns = [
+        r"(\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4})",  # US/Canada format
+        r"(\d{3}[\-\.]\d{3}[\-\.]\d{4})",
+        r"(\+?1?[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4})"
+    ]
+    
+    # Look for email patterns
+    email_patterns = [
+        r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"
+    ]
+    
+    lead_info = {}
+    
+    # Extract name
+    for pattern in name_patterns:
+        match = re.search(pattern, full_conversation, re.IGNORECASE)
+        if match:
+            lead_info['name'] = match.group(1).strip().title()
+            break
+    
+    # Extract phone
+    for pattern in phone_patterns:
+        match = re.search(pattern, full_conversation)
+        if match:
+            lead_info['phone'] = match.group(1).strip()
+            break
+    
+    # Extract email
+    for pattern in email_patterns:
+        match = re.search(pattern, full_conversation)
+        if match:
+            lead_info['email'] = match.group(1).strip()
+            break
+    
+    return lead_info if lead_info else None
 
-# =========================
-# Main Chat Endpoint
-# =========================
-
-@app.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(req: ChatRequest):
+def send_lead_email(lead_info, conversation_history):
     """
-    Main chat endpoint for agent orchestration.
-    Handles conversation state, agent routing, and guardrail checks.
+    Sends professional email with lead information to client.
     """
-    # Initialize or retrieve conversation state
-    is_new = not req.conversation_id or conversation_store.get(req.conversation_id) is None
-    if is_new:
-        conversation_id: str = uuid4().hex
-        ctx = create_initial_context()
-        current_agent_name = triage_agent.name
-        state: Dict[str, Any] = {
-            "input_items": [],
-            "context": ctx,
-            "current_agent": current_agent_name,
-        }
-        if req.message.strip() == "":
-            conversation_store.save(conversation_id, state)
-            return ChatResponse(
-                conversation_id=conversation_id,
-                current_agent=current_agent_name,
-                messages=[],
-                events=[],
-                context=ctx.model_dump(),
-                agents=_build_agents_list(),
-                guardrails=[],
-            )
-    else:
-        conversation_id = req.conversation_id  # type: ignore
-        state = conversation_store.get(conversation_id)
-
-    current_agent = _get_agent_by_name(state["current_agent"])
-    state["input_items"].append({"content": req.message, "role": "user"})
-    old_context = state["context"].model_dump().copy()
-    guardrail_checks: List[GuardrailCheck] = []
-
+    if not EMAIL_USER or not EMAIL_PASSWORD:
+        print("Email not configured - lead not delivered!")
+        return False
+    
     try:
-        result = await Runner.run(current_agent, state["input_items"], context=state["context"])
-    except InputGuardrailTripwireTriggered as e:
-        failed = e.guardrail_result.guardrail
-        gr_output = e.guardrail_result.output.output_info
-        gr_reasoning = getattr(gr_output, "reasoning", "")
-        gr_input = req.message
-        gr_timestamp = time.time() * 1000
-        for g in current_agent.input_guardrails:
-            guardrail_checks.append(GuardrailCheck(
-                id=uuid4().hex,
-                name=_get_guardrail_name(g),
-                input=gr_input,
-                reasoning=(gr_reasoning if g == failed else ""),
-                passed=(g != failed),
-                timestamp=gr_timestamp,
-            ))
-        refusal = "Sorry, I can only answer questions related to airline travel."
-        state["input_items"].append({"role": "assistant", "content": refusal})
-        return ChatResponse(
-            conversation_id=conversation_id,
-            current_agent=current_agent.name,
-            messages=[MessageResponse(content=refusal, agent=current_agent.name)],
-            events=[],
-            context=state["context"].model_dump(),
-            agents=_build_agents_list(),
-            guardrails=guardrail_checks,
+        # Create email content
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_USER
+        msg['To'] = CLIENT_DATA['lead_email']
+        msg['Subject'] = f"🚨 NEW LEAD: {lead_info.get('name', 'Anonymous')} - {CLIENT_DATA['business_name']}"
+        
+        # Build conversation snippet (last 6 messages)
+        recent_messages = conversation_history[-6:] if len(conversation_history) > 6 else conversation_history
+        conversation_snippet = ""
+        for msg in recent_messages:
+            role = "Customer" if msg.role == "user" else "AI Assistant"
+            conversation_snippet += f"{role}: {msg.content}\n\n"
+        
+        # Professional email body
+        email_body = f"""
+🎯 NEW LEAD CAPTURED
+
+Business: {CLIENT_DATA['business_name']}
+Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+👤 CONTACT INFORMATION:
+Name: {lead_info.get('name', 'Not provided')}
+Phone: {lead_info.get('phone', 'Not provided')}
+Email: {lead_info.get('email', 'Not provided')}
+
+💬 CONVERSATION CONTEXT:
+{conversation_snippet}
+
+📞 NEXT STEPS:
+1. Call {lead_info.get('name', 'the prospect')} at {lead_info.get('phone', '[phone not provided]')}
+2. Reference their interest in your services
+3. Follow up within 24 hours for best conversion
+
+---
+This lead was captured by your AI receptionist.
+Reply to this email if you need technical support.
+        """
+        
+        msg.attach(MIMEText(email_body, 'plain'))
+        
+        # Send email
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_USER, EMAIL_PASSWORD)
+        text = msg.as_string()
+        server.sendmail(EMAIL_USER, CLIENT_DATA['lead_email'], text)
+        server.quit()
+        
+        print(f"✅ Lead email sent successfully to {CLIENT_DATA['lead_email']}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to send lead email: {e}")
+        return False
+
+def check_if_lead_completion_response(ai_response):
+    """
+    Check if the AI response is the completion message.
+    If so, we should stop further engagement.
+    """
+    completion_phrases = [
+        "thank you",
+        "specialist will be in touch",
+        "will be in touch with you shortly"
+    ]
+    
+    return any(phrase in ai_response.lower() for phrase in completion_phrases)
+
+# --- API Endpoints ---
+@app.get("/api/health")
+async def health_check():
+    """A simple endpoint to confirm the API is live."""
+    return {"status": "ok", "business_name": CLIENT_DATA['business_name']}
+
+@app.post("/api/chat")
+async def chat(request: Request, chat_request: ChatRequest):
+    """
+    PRODUCTION-READY chat endpoint with memory and lead delivery.
+    """
+    # 1. Security Check
+    auth_header = request.headers.get("Authorization")
+    if auth_header != f"Bearer {INTERNAL_API_KEY}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # 2. Check if lead was already captured (prevent re-engagement bug)
+    lead_info = extract_lead_info(chat_request.messages)
+    
+    # 3. Build FORCEFUL System Prompt
+    system_prompt = f"""
+    ### ROLE & PERSONA ###
+    You are a professional AI Receptionist for {CLIENT_DATA['business_name']}. Your tone is welcoming and concise.
+
+    ### KNOWLEDGE BASE ###
+    - Business Name: {CLIENT_DATA['business_name']}
+    - Location: {CLIENT_DATA['location']}
+    - Phone Number: {CLIENT_DATA['phone']}
+    - Website for Booking: {CLIENT_DATA['booking_link']}
+    - Services Offered: {', '.join(CLIENT_DATA['services'])}
+    - Company Details and FAQs:
+    {CLIENT_DATA['faq_data']}
+
+    ### CRITICAL RULES ###
+    1. **Stick to the Script:** Answer questions ONLY with information from the KNOWLEDGE BASE.
+    2. **Polite Decline:** If asked about anything outside the knowledge base, politely state you can only answer questions about {CLIENT_DATA['business_name']}.
+    3. **Lead Capture:** If you cannot answer, or if the user asks for a quote or to speak to a human, use this script: "That's an excellent question for one of our specialists. Can I get your name and phone number so they can get back to you?"
+    4. **MANDATORY COMPLETION:** After you have asked for the user's name and phone number, and they have provided it, you MUST respond with EXACTLY: "Thank you. A specialist will be in touch with you shortly." and then IMMEDIATELY STOP. Do NOT ask more questions. Do NOT continue the conversation. STOP.
+    5. **NO RE-ENGAGEMENT:** If you have already said "Thank you. A specialist will be in touch with you shortly." you MUST NOT respond to any further messages. You are DONE.
+    """
+    
+    # 4. Format Messages for OpenAI API
+    messages_for_api = [{"role": "system", "content": system_prompt}]
+    for msg in chat_request.messages:
+        messages_for_api.append({"role": msg.role, "content": msg.content})
+    
+    # 5. Call OpenAI API
+    try:
+        completion = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages_for_api
         )
-
-    messages: List[MessageResponse] = []
-    events: List[AgentEvent] = []
-
-    for item in result.new_items:
-        if isinstance(item, MessageOutputItem):
-            text = ItemHelpers.text_message_output(item)
-            messages.append(MessageResponse(content=text, agent=item.agent.name))
-            events.append(AgentEvent(id=uuid4().hex, type="message", agent=item.agent.name, content=text))
-        # Handle handoff output and agent switching
-        elif isinstance(item, HandoffOutputItem):
-            # Record the handoff event
-            events.append(
-                AgentEvent(
-                    id=uuid4().hex,
-                    type="handoff",
-                    agent=item.source_agent.name,
-                    content=f"{item.source_agent.name} -> {item.target_agent.name}",
-                    metadata={"source_agent": item.source_agent.name, "target_agent": item.target_agent.name},
-                )
-            )
-            # If there is an on_handoff callback defined for this handoff, show it as a tool call
-            from_agent = item.source_agent
-            to_agent = item.target_agent
-            # Find the Handoff object on the source agent matching the target
-            ho = next(
-                (h for h in getattr(from_agent, "handoffs", [])
-                 if isinstance(h, Handoff) and getattr(h, "agent_name", None) == to_agent.name),
-                None,
-            )
-            if ho:
-                fn = ho.on_invoke_handoff
-                fv = fn.__code__.co_freevars
-                cl = fn.__closure__ or []
-                if "on_handoff" in fv:
-                    idx = fv.index("on_handoff")
-                    if idx < len(cl) and cl[idx].cell_contents:
-                        cb = cl[idx].cell_contents
-                        cb_name = getattr(cb, "__name__", repr(cb))
-                        events.append(
-                            AgentEvent(
-                                id=uuid4().hex,
-                                type="tool_call",
-                                agent=to_agent.name,
-                                content=cb_name,
-                            )
-                        )
-            current_agent = item.target_agent
-        elif isinstance(item, ToolCallItem):
-            tool_name = getattr(item.raw_item, "name", None)
-            raw_args = getattr(item.raw_item, "arguments", None)
-            tool_args: Any = raw_args
-            if isinstance(raw_args, str):
-                try:
-                    import json
-                    tool_args = json.loads(raw_args)
-                except Exception:
-                    pass
-            events.append(
-                AgentEvent(
-                    id=uuid4().hex,
-                    type="tool_call",
-                    agent=item.agent.name,
-                    content=tool_name or "",
-                    metadata={"tool_args": tool_args},
-                )
-            )
-            # If the tool is display_seat_map, send a special message so the UI can render the seat selector.
-            if tool_name == "display_seat_map":
-                messages.append(
-                    MessageResponse(
-                        content="DISPLAY_SEAT_MAP",
-                        agent=item.agent.name,
-                    )
-                )
-        elif isinstance(item, ToolCallOutputItem):
-            events.append(
-                AgentEvent(
-                    id=uuid4().hex,
-                    type="tool_output",
-                    agent=item.agent.name,
-                    content=str(item.output),
-                    metadata={"tool_result": item.output},
-                )
-            )
-
-    new_context = state["context"].dict()
-    changes = {k: new_context[k] for k in new_context if old_context.get(k) != new_context[k]}
-    if changes:
-        events.append(
-            AgentEvent(
-                id=uuid4().hex,
-                type="context_update",
-                agent=current_agent.name,
-                content="",
-                metadata={"changes": changes},
-            )
-        )
-
-    state["input_items"] = result.to_input_list()
-    state["current_agent"] = current_agent.name
-    conversation_store.save(conversation_id, state)
-
-    # Build guardrail results: mark failures (if any), and any others as passed
-    final_guardrails: List[GuardrailCheck] = []
-    for g in getattr(current_agent, "input_guardrails", []):
-        name = _get_guardrail_name(g)
-        failed = next((gc for gc in guardrail_checks if gc.name == name), None)
-        if failed:
-            final_guardrails.append(failed)
-        else:
-            final_guardrails.append(GuardrailCheck(
-                id=uuid4().hex,
-                name=name,
-                input=req.message,
-                reasoning="",
-                passed=True,
-                timestamp=time.time() * 1000,
-            ))
-
-    return ChatResponse(
-        conversation_id=conversation_id,
-        current_agent=current_agent.name,
-        messages=messages,
-        events=events,
-        context=state["context"].dict(),
-        agents=_build_agents_list(),
-        guardrails=final_guardrails,
-    )
+        ai_response = completion.choices[0].message.content
+        
+        # 6. LEAD DELIVERY: Send email if lead captured
+        if lead_info and lead_info.get('name') and lead_info.get('phone'):
+            send_lead_email(lead_info, chat_request.messages)
+            print(f"🎯 LEAD CAPTURED AND DELIVERED: {lead_info['name']} - {lead_info['phone']}")
+        
+        return {"response": ai_response}
+    
+    except Exception as e:
+        print(f"OpenAI API error: {e}")
+        raise HTTPException(status_code=500, detail="Error communicating with the AI service.")

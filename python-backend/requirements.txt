@@ -1,4 +1,6 @@
-openai-agents
-pydantic
 fastapi
 uvicorn
+openai
+pydantic
+# Email functionality for lead delivery
+email-validator
