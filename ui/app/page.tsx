@@ -132,8 +132,3 @@ export default function Home() {
     </div>
   );
 }
-```
-
-After you've updated the code, commit the changes and push to GitHub. Vercel will start a new deployment. This time, it will compile successfully because we have removed all the dead code.
-
-This is the final cleanup. This is how we make it professional. Let's get it do
