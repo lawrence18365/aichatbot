@@ -2,7 +2,8 @@
 
 import type React from "react"
 
-import { useState, useCallback, memo } from "react"
+import { useState, useCallback, memo, useEffect } from "react"
+import { initEmailJS, sendNewsletterSignup } from "@/lib/emailjs"
 import {
   ArrowRight,
   Check,
@@ -78,6 +79,11 @@ export default function Page() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Initialize EmailJS on component mount
+  useEffect(() => {
+    initEmailJS()
+  }, [])
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
@@ -86,11 +92,18 @@ export default function Page() {
       setIsLoading(true)
 
       try {
-        // TODO: Implement actual email capture logic
-        await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
-        setIsSubmitted(true)
-        setEmail("")
-        setTimeout(() => setIsSubmitted(false), 3000)
+        const success = await sendNewsletterSignup({ 
+          email, 
+          source: "Homepage Hero Form" 
+        })
+        
+        if (success) {
+          setIsSubmitted(true)
+          setEmail("")
+          setTimeout(() => setIsSubmitted(false), 3000)
+        } else {
+          console.error("Email submission failed")
+        }
       } catch (error) {
         console.error("Email submission failed:", error)
       } finally {
@@ -121,28 +134,28 @@ export default function Page() {
             </div>
             <nav className="hidden md:flex items-center space-x-10" role="navigation" aria-label="Main navigation">
               <a
-                href="#features"
+                href="/features"
                 className="text-stone-600 hover:text-zinc-900 font-light transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded-md px-2 py-1"
               >
                 Features
               </a>
               <a
-                href="#how-it-works"
-                className="text-stone-600 hover:text-zinc-900 font-light transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded-md px-2 py-1"
-              >
-                How It Works
-              </a>
-              <a
-                href="#pricing"
+                href="/pricing"
                 className="text-stone-600 hover:text-zinc-900 font-light transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded-md px-2 py-1"
               >
                 Pricing
               </a>
               <a
-                href="#contact"
+                href="/about"
                 className="text-stone-600 hover:text-zinc-900 font-light transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded-md px-2 py-1"
               >
-                Contact
+                About
+              </a>
+              <a
+                href="/help"
+                className="text-stone-600 hover:text-zinc-900 font-light transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded-md px-2 py-1"
+              >
+                Help
               </a>
               <button className="bg-gradient-to-r from-zinc-900 to-zinc-800 text-white px-6 py-3 rounded-xl font-medium hover:from-zinc-800 hover:to-zinc-700 transition-all duration-300 shadow-lg hover:shadow-xl relative overflow-hidden group focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
                 <span className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
@@ -183,26 +196,26 @@ export default function Page() {
 
               {/* Main Headline */}
               <h1 className="text-5xl lg:text-6xl xl:text-7xl font-serif font-light text-zinc-900 leading-[0.9] mb-8 tracking-tight">
-                Stop losing
+                Simple AI chatbot
                 <span className="block font-medium bg-gradient-to-r from-amber-600 via-orange-500 to-rose-600 bg-clip-text text-transparent mt-3 drop-shadow-sm">
-                  customers
+                  captures leads
                 </span>
                 <span className="block text-3xl lg:text-4xl xl:text-5xl font-mono font-light text-zinc-700 mt-4 tracking-wide">
-                  while you sleep
+                  emails them to you
                 </span>
               </h1>
 
               {/* Subheadline */}
               <p className="text-xl lg:text-2xl text-zinc-600 leading-relaxed mb-12 max-w-2xl font-light">
-                Turn your website into a{" "}
+                Perfect for small businesses who can't afford to miss opportunities. When someone visits your website and wants to buy,{" "}
                 <span className="text-zinc-900 font-medium bg-gradient-to-r from-amber-100 to-orange-100 px-1 rounded">
-                  24/7 sales machine
+                  they get instant help
                 </span>
-                . Leadaisy captures every visitor, answers their questions, and
+                {" "}and{" "}
                 <span className="text-zinc-900 font-medium bg-gradient-to-r from-rose-100 to-pink-100 px-1 rounded">
-                  delivers hot leads to your inbox
-                </span>{" "}
-                — even at 3 AM.
+                  you get their contact info immediately
+                </span>
+                .
               </p>
 
               {/* Social Proof */}
@@ -213,7 +226,7 @@ export default function Page() {
                     <div className="absolute -inset-1 w-5 h-5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300"></div>
                   </div>
                   <span className="text-sm font-medium group-hover:text-zinc-700 transition-colors">
-                    Never offline, never tired ⚡
+                    Works 24/7, even while you sleep 💤
                   </span>
                 </div>
                 <div className="flex items-center gap-3 group cursor-default">
@@ -222,7 +235,7 @@ export default function Page() {
                     <div className="absolute -inset-1 w-5 h-5 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300"></div>
                   </div>
                   <span className="text-sm font-medium group-hover:text-zinc-700 transition-colors">
-                    Setup in under 5 minutes 🚀
+                    $97/month, no setup fees 💰
                   </span>
                 </div>
                 <div className="flex items-center gap-3 group cursor-default">
@@ -231,7 +244,7 @@ export default function Page() {
                     <div className="absolute -inset-1 w-5 h-5 bg-gradient-to-r from-rose-400 to-pink-400 rounded-full opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300"></div>
                   </div>
                   <span className="text-sm font-medium group-hover:text-zinc-700 transition-colors">
-                    Works with any website ✨
+                    5-minute setup for any website ⚡
                   </span>
                 </div>
               </div>
@@ -255,8 +268,8 @@ export default function Page() {
                   <div className="relative bg-white/95 backdrop-blur-xl border border-amber-200/30 rounded-3xl p-8 shadow-2xl shadow-amber-500/5 hover:shadow-3xl hover:shadow-orange-500/10 transition-all duration-500 transform hover:-translate-y-2 hover:scale-[1.02]">
                     {/* Header */}
                     <div className="text-center mb-6">
-                      <h2 className="text-xl font-serif font-medium text-zinc-900 mb-2">Start capturing leads</h2>
-                      <p className="text-zinc-600 text-sm font-light">Join thousands who never miss an opportunity</p>
+                      <h2 className="text-xl font-serif font-medium text-zinc-900 mb-2">Try it for free</h2>
+                      <p className="text-zinc-600 text-sm font-light">See how it works, then decide if you want it</p>
                     </div>
 
                     {/* Form */}
@@ -311,7 +324,7 @@ export default function Page() {
                             </>
                           ) : (
                             <>
-                              Get my AI assistant
+                              Try it free
                               <ArrowRight
                                 className="h-5 w-5 group-hover:translate-x-1 group-hover:scale-110 transition-all duration-300"
                                 aria-hidden="true"
@@ -366,13 +379,13 @@ export default function Page() {
                           ></div>
                         </div>
                         <p className="text-xs text-zinc-500 group-hover:text-zinc-700 transition-colors font-medium">
-                          Enterprise
+                          Simple
                         </p>
                       </div>
                     </div>
 
                     <p className="text-xs text-zinc-500 text-center mt-4 font-light">
-                      No spam, ever. Unsubscribe with one click. ✨
+                      Try free first. Only $97/month when you're ready. ✨
                     </p>
                   </div>
                 </div>
@@ -389,22 +402,22 @@ export default function Page() {
             <BenefitCard
               icon={Clock}
               title="Always Available"
-              description="Capture opportunities even when your team is offline."
+              description="Never miss a customer because your website visitors get help immediately."
             />
             <BenefitCard
               icon={Zap}
-              title="Instant Engagement"
-              description="Connect with visitors the moment they show interest."
+              title="Instant Responses"
+              description="Turn website visitors into customers by answering their questions instantly."
             />
             <BenefitCard
               icon={Sparkles}
-              title="Effortless Setup"
-              description="Enterprise deployment in minutes, not months."
+              title="Easy Setup"
+              description="We handle all the technical stuff so you don't have to."
             />
             <BenefitCard
               icon={TrendingUp}
-              title="Proven Results"
-              description="Focus your team on closing, not just collecting."
+              title="More Leads"
+              description="Get more customers without working harder or staying up all night."
             />
           </div>
         </div>
@@ -415,46 +428,45 @@ export default function Page() {
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-light text-zinc-900 mb-6 leading-tight">
-              An AI Partner Built for
+              How it
               <span className="block font-medium bg-gradient-to-r from-amber-700 via-orange-600 to-rose-700 bg-clip-text text-transparent mt-3 drop-shadow-sm">
-                Your Enterprise
+                helps you
               </span>
             </h2>
             <p className="text-lg lg:text-xl text-stone-600 max-w-3xl mx-auto font-light leading-relaxed">
-              Sophisticated features designed to provide seamless experiences for your customers and deliver qualified
-              opportunities directly to your team
+              Three simple ways this chatbot helps small businesses capture more customers
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-16">
             <FeatureCard
-              icon={Bot}
-              title="Intelligent Conversation Engine"
-              description="Advanced natural language processing designed to understand your business context. We train your AI on your specific solutions and expertise to provide accurate, contextually-aware responses that build trust."
+              icon={Clock}
+              title="Never Miss a Customer"
+              description="When someone visits your website at 2am or on Sunday, they get instant help instead of leaving empty-handed."
               features={[
-                "Sophisticated conversation flows",
-                "Business-specific knowledge training",
-                "Multi-language capability",
+                "Works 24 hours a day, 7 days a week",
+                "Answers questions while you sleep",
+                "Prevents customers from going to competitors",
+              ]}
+            />
+            <FeatureCard
+              icon={Mail}
+              title="Get Their Contact Info"
+              description="When someone is interested in your services, the chatbot gets their name and phone number and emails it to you immediately."
+              features={[
+                "Emails you every time someone is interested",
+                "Includes their name and phone number",
+                "Shows exactly what they're looking for",
               ]}
             />
             <FeatureCard
               icon={Zap}
-              title="Rapid Enterprise Deployment"
-              description="Experience enterprise-grade deployment without the enterprise timeline. Our sophisticated yet streamlined approach delivers personalized setup and dedicated support you won't find elsewhere."
+              title="Simple to Set Up"
+              description="We handle everything for you. Just tell us about your business and we'll have your chatbot ready in 24 hours."
               features={[
-                "One-click enterprise integration",
-                "Zero technical complexity",
-                "White-glove implementation support",
-              ]}
-            />
-            <FeatureCard
-              icon={BarChart3}
-              title="Enterprise Analytics"
-              description="Sophisticated analytics dashboard designed for enterprise decision-making. Track engagement patterns, monitor lead quality, and gain deep insights into your customer journey—all in real-time."
-              features={[
-                "Real-time performance metrics",
-                "Advanced conversation analytics",
-                "Executive-level reporting",
+                "No technical skills needed",
+                "Works on any website",
+                "We do all the setup for you",
               ]}
             />
           </div>
@@ -466,14 +478,13 @@ export default function Page() {
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-light text-zinc-900 mb-6 leading-tight">
-              Our Collaborative
+              How It
               <span className="block font-medium bg-gradient-to-r from-amber-700 via-orange-600 to-rose-700 bg-clip-text text-transparent mt-3 drop-shadow-sm">
-                Implementation Process
+                Works
               </span>
             </h2>
             <p className="text-lg lg:text-xl text-stone-600 max-w-3xl mx-auto font-light leading-relaxed">
-              From consultation to launch, we work with you every step of the way to ensure your AI assistant becomes a
-              perfect extension of your enterprise
+              Simple 3-step process to get your AI chatbot capturing leads from your website
             </p>
           </div>
 
@@ -482,21 +493,21 @@ export default function Page() {
               {[
                 {
                   step: 1,
-                  title: "We Understand Your Enterprise",
+                  title: "Tell Us About Your Business",
                   description:
-                    "We begin with a comprehensive analysis of your business ecosystem, customer journey, and strategic objectives to create a tailored AI solution that aligns with your enterprise goals.",
+                    "Share basic information about your services, pricing, and common customer questions. This helps us train your chatbot to represent your business accurately.",
                 },
                 {
                   step: 2,
-                  title: "We Build Your Custom Intelligence",
+                  title: "We Set Up Your Chatbot",
                   description:
-                    "Our team develops and trains your AI assistant using your enterprise knowledge base and our advanced machine learning algorithms to ensure optimal performance and authentic brand representation.",
+                    "Our team creates your custom chatbot and provides you with a simple code snippet to add to your website. Takes just a few minutes to install.",
                 },
                 {
                   step: 3,
-                  title: "We Deploy & Optimize",
+                  title: "Start Capturing Leads",
                   description:
-                    "We handle enterprise-grade deployment across your digital ecosystem. Our team ensures seamless integration and provides ongoing optimization to maximize opportunity conversion and customer satisfaction.",
+                    "Your chatbot goes live on your website, answering questions and capturing leads 24/7. All leads are automatically sent to your email inbox.",
                 },
               ].map((item) => (
                 <div key={item.step} className="flex flex-col md:flex-row md:items-start gap-8 group">
@@ -519,24 +530,14 @@ export default function Page() {
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-20">
             <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl font-light text-zinc-900 mb-8 leading-tight">
-              Transparent,
+              Simple,
               <span className="block font-medium bg-gradient-to-r from-amber-700 via-orange-600 to-rose-700 bg-clip-text text-transparent mt-3 drop-shadow-sm">
-                Value-Driven Pricing
+                Honest Pricing
               </span>
             </h2>
             <p className="text-xl lg:text-2xl text-stone-600 max-w-2xl mx-auto mb-10 font-light leading-relaxed">
-              Enterprise-grade solution designed for forward-thinking businesses. All plans include our sophisticated
-              features and dedicated support.
+              No tricks, no hidden fees, no complicated contracts. Just a simple monthly price for a tool that helps you capture more leads.
             </p>
-            <div className="bg-emerald-50 border border-emerald-200/50 rounded-2xl p-8 max-w-2xl mx-auto">
-              <div className="text-emerald-800 font-serif text-xl font-medium mb-3">
-                Exclusive Offer for Founding Partners
-              </div>
-              <p className="text-emerald-700 font-light">
-                Our Founding Partners receive exclusive access to enterprise pricing. Contact us to discuss your
-                specific requirements.
-              </p>
-            </div>
           </div>
 
           {/* Pricing Card */}
@@ -547,44 +548,29 @@ export default function Page() {
                 aria-hidden="true"
               ></div>
 
-              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-2xl text-sm font-medium shadow-lg">
-                🎉 FOUNDING MEMBER EXCLUSIVE
-              </div>
-
               <div className="relative text-center mb-12 mt-8">
-                <h3 className="font-serif text-3xl font-medium text-zinc-900 mb-6">Enterprise AI Support</h3>
-                <p className="text-stone-600 mb-10 font-light text-lg">Everything your enterprise needs to excel</p>
+                <h3 className="font-serif text-3xl font-medium text-zinc-900 mb-6">AI Chatbot for Your Website</h3>
+                <p className="text-stone-600 mb-10 font-light text-lg">Everything you need to capture more leads</p>
 
                 <div className="mb-10">
                   <div className="flex items-center justify-center gap-4 mb-4">
-                    <span className="text-3xl text-stone-400 line-through font-light">$297</span>
                     <span className="text-6xl font-serif font-light text-zinc-900">
                       $97<span className="text-2xl text-stone-500 font-light">/month</span>
                     </span>
                   </div>
-                  <div className="text-lg text-emerald-700 font-medium mb-3">
-                    <span className="line-through text-stone-400">Setup investment of $297</span>
-                  </div>
-                  <p className="text-sm text-stone-500 font-light">Save $297 as a founding member</p>
-                </div>
-
-                <div className="bg-emerald-50/50 border border-emerald-200/50 rounded-2xl p-8 mb-10">
-                  
-                  <div className="text-emerald-700 font-light">
-                    Your founding member investment: <span className="text-2xl font-medium">$97/month</span>
-                  </div>
+                  <p className="text-lg text-stone-600 font-light">No setup fees • Cancel anytime • 30-day money back guarantee</p>
                 </div>
               </div>
 
               <ul className="space-y-5 mb-12">
                 {[
-                  "Unlimited enterprise conversations",
-                  "Instant opportunity capture & notifications",
-                  "Enterprise white-glove implementation",
-                  "Advanced analytics & reporting suite",
-                  "24/7 enterprise priority support",
-                  "Custom branding & seamless integration",
-                  "Flexible terms, cancel anytime",
+                  "Unlimited conversations with your customers",
+                  "Automatic lead capture and email notifications",
+                  "We set up everything for you in 24 hours",
+                  "Works on any website (WordPress, Shopify, etc.)",
+                  "Email support when you need help",
+                  "Custom training on your business information",
+                  "Cancel anytime, no contracts or hidden fees",
                 ].map((feature, index) => (
                   <li key={index} className="flex items-center gap-4">
                     <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -600,12 +586,13 @@ export default function Page() {
                   className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                   aria-hidden="true"
                 ></span>
-                <span className="relative">🎯 Secure Your Founding Member Position</span>
+                <span className="relative">Get Started - $97/month</span>
               </button>
 
               <div className="text-center mt-8 space-y-2">
-                <p className="text-sm text-stone-500 font-light">⚡ Implementation completed within 24 hours</p>
-                <p className="text-sm text-stone-500 font-light">💰 30-day satisfaction guarantee</p>
+                <p className="text-sm text-stone-500 font-light">⚡ Setup completed within 24 hours</p>
+                <p className="text-sm text-stone-500 font-light">💰 30-day money back guarantee</p>
+                <p className="text-sm text-stone-500 font-light">📞 Talk to a real person, not a chatbot</p>
               </div>
             </div>
           </div>
@@ -613,102 +600,17 @@ export default function Page() {
           <div className="text-center mt-16">
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/50 rounded-2xl p-8 max-w-lg mx-auto">
               <div className="text-amber-800 font-serif font-medium text-lg mb-3">
-                ⏰ Limited Founding Member Availability
+                💡 Why Only $97/Month?
               </div>
               <p className="text-amber-700 text-sm font-light">
-                Accepting only 50 founding members at this exclusive rate. Standard enterprise pricing begins at
-                <span className="font-medium"> $997/month</span> + implementation.
+                We built this for small businesses like restaurants, contractors, and local service providers who need to capture leads but can't afford expensive enterprise software.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Founding Partner Section */}
-      <section className="py-24 bg-stone-50/30">
-        <div className="max-w-6xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-light text-zinc-900 mb-6 leading-tight">
-              Become a Founding Partner &
-              <span className="block font-medium bg-gradient-to-r from-amber-700 via-orange-600 to-rose-700 bg-clip-text text-transparent mt-3 drop-shadow-sm">
-                Shape the Future
-              </span>
-            </h2>
-            <p className="text-lg lg:text-xl text-stone-600 max-w-3xl mx-auto font-light leading-relaxed">
-              Exceptional solutions are built with exceptional partners. We're launching Leadaisy and seeking a select
-              group of forward-thinking enterprises to join us at the foundation.
-            </p>
-          </div>
 
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-br from-white via-stone-50/50 to-emerald-50/30 border border-emerald-200/30 rounded-3xl p-12 relative overflow-hidden">
-              <div
-                className="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-emerald-100/50 to-teal-100/50 rounded-full -translate-x-20 -translate-y-20"
-                aria-hidden="true"
-              ></div>
-              <div
-                className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-emerald-100/30 to-teal-100/30 rounded-full translate-x-16 translate-y-16"
-                aria-hidden="true"
-              ></div>
-
-              <div className="relative">
-                <h3 className="font-serif text-2xl lg:text-3xl font-medium text-zinc-900 mb-12 text-center">
-                  As a Founding Partner, you receive:
-                </h3>
-
-                <div className="grid md:grid-cols-2 gap-8">
-                  {[
-                    {
-                      icon: TrendingUp,
-                      title: "Exclusive Enterprise Pricing",
-                      description:
-                        "Secure Leadaisy at our special founder's rate for life, or receive your first 6 months completely complimentary.",
-                    },
-                    {
-                      icon: Users,
-                      title: "Executive White-Glove Implementation",
-                      description:
-                        "As founder and lead architect, I personally oversee your entire implementation and AI training.",
-                    },
-                    {
-                      icon: Shield,
-                      title: "Direct Executive Access",
-                      description:
-                        "Receive direct access to our executive team. Your insights become our immediate priority.",
-                    },
-                    {
-                      icon: Sparkles,
-                      title: "Strategic Product Influence",
-                      description: "Your enterprise requirements directly influence our development roadmap.",
-                    },
-                  ].map((item, index) => (
-                    <div
-                      key={index}
-                      className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-stone-200/50 group hover:shadow-lg transition-all duration-300"
-                    >
-                      <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-emerald-200 transition-colors">
-                        <item.icon className="h-6 w-6 text-emerald-700" aria-hidden="true" />
-                      </div>
-                      <h4 className="font-serif text-lg font-medium text-zinc-900 mb-3">{item.title}</h4>
-                      <p className="text-stone-600 font-light leading-relaxed text-sm">{item.description}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="text-center mt-12">
-                  <button className="bg-gradient-to-r from-zinc-900 to-zinc-800 text-white px-8 py-4 rounded-2xl font-medium text-base hover:from-zinc-800 hover:to-zinc-700 transition-all duration-300 shadow-xl hover:shadow-2xl relative overflow-hidden group focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
-                    <span
-                      className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                      aria-hidden="true"
-                    ></span>
-                    <span className="relative">Apply for Founding Partnership</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Contact Section */}
       <section id="contact" className="py-24 bg-zinc-900 text-white relative overflow-hidden">
@@ -723,14 +625,13 @@ export default function Page() {
 
         <div className="relative max-w-4xl mx-auto px-6 lg:px-8 text-center">
           <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-light mb-6 leading-tight">
-            Ready to Transform Your
+            Ready to Stop Missing
             <span className="block font-medium bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent mt-3 drop-shadow-sm">
-              Customer Experience?
+              Potential Customers?
             </span>
           </h2>
           <p className="text-lg lg:text-xl text-stone-300 mb-12 font-light leading-relaxed max-w-3xl mx-auto">
-            Be among the first enterprises to leverage Leadaisy. Begin capturing more opportunities, delighting
-            customers with instant support, and accelerating your growth trajectory.
+            Get started with your AI chatbot today. We'll have you capturing leads from your website in 24 hours.
           </p>
 
           <div className="grid md:grid-cols-2 gap-8 mb-12">
@@ -739,9 +640,9 @@ export default function Page() {
                 className="h-8 w-8 text-emerald-400 mx-auto mb-4 group-hover:scale-110 transition-transform"
                 aria-hidden="true"
               />
-              <h3 className="font-serif text-lg font-medium mb-3">Email Our Executive Team</h3>
+              <h3 className="font-serif text-lg font-medium mb-3">Email Us</h3>
               <p className="text-stone-300 mb-4 font-light text-sm">
-                Schedule a personalized demo and enterprise consultation
+                Questions? Want to see how it works? Just email us.
               </p>
               <a
                 href="mailto:sales@leadaisy.com"
@@ -755,8 +656,8 @@ export default function Page() {
                 className="h-8 w-8 text-emerald-400 mx-auto mb-4 group-hover:scale-110 transition-transform"
                 aria-hidden="true"
               />
-              <h3 className="font-serif text-lg font-medium mb-3">Direct Executive Line</h3>
-              <p className="text-stone-300 mb-4 font-light text-sm">Speak with our enterprise specialists today</p>
+              <h3 className="font-serif text-lg font-medium mb-3">Call Us</h3>
+              <p className="text-stone-300 mb-4 font-light text-sm">Talk to a real person who can answer your questions</p>
               <a
                 href="tel:+16729995648"
                 className="text-emerald-400 hover:text-emerald-300 font-medium text-base transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-900 rounded-md px-2 py-1"
@@ -767,7 +668,7 @@ export default function Page() {
           </div>
 
           <button className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-2xl font-medium text-base hover:from-emerald-500 hover:to-teal-500 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/25 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-900">
-            Begin Your Enterprise Trial Today
+            Get Started Today - $97/month
           </button>
         </div>
       </section>
@@ -775,7 +676,7 @@ export default function Page() {
       {/* Footer */}
       <footer className="bg-zinc-800 text-stone-300 py-16">
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-12">
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
             <div>
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center">
@@ -784,16 +685,25 @@ export default function Page() {
                 <span className="font-serif text-lg font-medium text-white">Leadaisy</span>
               </div>
               <p className="text-stone-400 mb-4 font-light leading-relaxed text-sm">
-                An intelligent AI-powered customer engagement platform designed to help enterprises capture more
-                opportunities and accelerate growth.
+                A simple AI chatbot that captures leads from your website and emails them to you. Perfect for small businesses who can't afford to miss opportunities.
               </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-stone-400 text-sm">
+                  <Mail className="h-4 w-4" />
+                  <a href="mailto:hello@leadaisy.com" className="hover:text-white transition-colors">hello@leadaisy.com</a>
+                </div>
+                <div className="flex items-center gap-2 text-stone-400 text-sm">
+                  <Phone className="h-4 w-4" />
+                  <a href="tel:+16729995648" className="hover:text-white transition-colors">(672) 999-5648</a>
+                </div>
+              </div>
             </div>
             <div>
               <h4 className="font-serif font-medium text-white mb-4">Platform</h4>
               <ul className="space-y-2">
                 <li>
                   <a
-                    href="#features"
+                    href="/features"
                     className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
                   >
                     Features
@@ -801,7 +711,7 @@ export default function Page() {
                 </li>
                 <li>
                   <a
-                    href="#pricing"
+                    href="/pricing"
                     className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
                   >
                     Pricing
@@ -809,47 +719,29 @@ export default function Page() {
                 </li>
                 <li>
                   <a
-                    href="#"
+                    href="/help"
                     className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
                   >
-                    Integrations
+                    Help & FAQ
                   </a>
                 </li>
                 <li>
                   <a
-                    href="#"
+                    href="/blog"
                     className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
                   >
-                    Enterprise API
+                    Blog
                   </a>
                 </li>
               </ul>
-            </div>
-            <div>
-              <h4 className="font-serif font-medium text-white mb-4">Company</h4>
+              <h4 className="font-serif font-medium text-white mb-4 mt-6">Company</h4>
               <ul className="space-y-2">
                 <li>
                   <a
-                    href="#"
+                    href="/about"
                     className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
                   >
                     About
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
-                  >
-                    Leadership
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
-                  >
-                    Careers
                   </a>
                 </li>
                 <li>
@@ -863,38 +755,38 @@ export default function Page() {
               </ul>
             </div>
             <div>
-              <h4 className="font-serif font-medium text-white mb-4">Support</h4>
+              <h4 className="font-serif font-medium text-white mb-4">Legal & Support</h4>
               <ul className="space-y-2">
                 <li>
                   <a
-                    href="#"
-                    className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
-                  >
-                    Help Center
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
-                  >
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
-                  >
-                    System Status
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
+                    href="/privacy"
                     className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
                   >
                     Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/terms"
+                    className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
+                  >
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="mailto:support@leadaisy.com"
+                    className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
+                  >
+                    Technical Support
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="mailto:security@leadaisy.com"
+                    className="hover:text-white transition-colors font-light text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-zinc-800 rounded-md px-1 py-0.5"
+                  >
+                    Security & Compliance
                   </a>
                 </li>
               </ul>
@@ -903,7 +795,7 @@ export default function Page() {
           <div className="border-t border-zinc-700 pt-6 flex flex-col md:flex-row justify-between items-center">
             <div className="text-stone-400 mb-4 md:mb-0 font-light text-sm">© 2025 Leadaisy. All rights reserved.</div>
             <div className="text-stone-400 font-light text-sm">
-              Empowering enterprises with intelligent customer engagement solutions
+              Helping small businesses capture more leads with simple AI technology
             </div>
           </div>
         </div>
