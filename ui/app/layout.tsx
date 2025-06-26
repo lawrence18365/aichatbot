@@ -6,10 +6,10 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Airlines Agent Orchestration",
-  description: "An interface for airline agent orchestration",
+  title: "Leadaisy | AI Assistants for Local Business",
+  description: "Professional AI assistants that help local businesses capture leads and serve customers 24/7",
   icons: {
-    icon: "/openai_logo.svg",
+    icon: "/leadaisy-icon.svg",
   },
 };
 

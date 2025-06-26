@@ -2,5 +2,6 @@ fastapi
 uvicorn
 openai
 pydantic
+python-dotenv
 # Email functionality for lead delivery
 email-validator
