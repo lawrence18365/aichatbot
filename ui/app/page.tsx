@@ -255,9 +255,6 @@ export default function Page() {
                   <div className="relative bg-white/95 backdrop-blur-xl border border-amber-200/30 rounded-3xl p-8 shadow-2xl shadow-amber-500/5 hover:shadow-3xl hover:shadow-orange-500/10 transition-all duration-500 transform hover:-translate-y-2 hover:scale-[1.02]">
                     {/* Header */}
                     <div className="text-center mb-6">
-                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50/80 via-orange-50/60 to-rose-50/80 border border-amber-200/40 rounded-full text-xs font-medium text-amber-800 mb-4 shadow-sm">
-                        ✨ Free Trial • No Credit Card
-                      </div>
                       <h2 className="text-xl font-serif font-medium text-zinc-900 mb-2">Start capturing leads</h2>
                       <p className="text-zinc-600 text-sm font-light">Join thousands who never miss an opportunity</p>
                     </div>
