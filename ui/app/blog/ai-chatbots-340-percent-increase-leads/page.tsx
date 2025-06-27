@@ -71,7 +71,9 @@ export default function BlogPost() {
                   <div className="text-3xl font-bold text-emerald-600 mb-2">67%</div>
                   <div className="text-stone-600 font-medium">Faster Response Time</div>
                 </div>
-                <div className="text-3xl font-bold text-emerald-600 mb-2">24/7</div>
+                {/* This block is now corrected */}
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-emerald-600 mb-2">24/7</div>
                   <div className="text-stone-600 font-medium">Availability Boost</div>
                 </div>
               </div>
