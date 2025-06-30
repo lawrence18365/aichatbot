@@ -8,7 +8,11 @@ type Message = {
   content: string;
 };
 
-export default function OriginalChatWidget() {
+interface ChatWidgetProps {
+  embedded?: boolean;
+}
+
+export default function OriginalChatWidget({ embedded = false }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: "Hello! How can I help you today?" }
@@ -62,6 +66,51 @@ export default function OriginalChatWidget() {
     }
   };
 
+  // Embedded mode - just render the chat interface
+  if (embedded) {
+    return (
+      <div className="w-full h-full bg-white flex flex-col font-sans">
+        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50">
+          {messages.map((msg, index) => (
+            <div key={index} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-xs md:max-w-sm px-4 py-2 rounded-2xl ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-br-none' : 'bg-white text-gray-900 rounded-bl-none shadow-sm border border-gray-100'}`}>
+                {msg.content}
+              </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex justify-start">
+                <div className="bg-white text-gray-900 px-4 py-2 rounded-2xl rounded-bl-none shadow-sm border border-gray-100">
+                    <div className="flex items-center space-x-2">
+                        <span className="h-2 w-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="h-2 w-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="h-2 w-2 bg-emerald-500 rounded-full animate-bounce"></span>
+                    </div>
+                </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+        <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-200">
+          <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Type your message..."
+              className="flex-1 p-2 bg-transparent rounded-lg focus:outline-none text-gray-900 placeholder-gray-500"
+              disabled={isLoading}
+            />
+            <button type="submit" className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 disabled:bg-gray-400 transition-colors" disabled={isLoading || !inputValue.trim()}>
+              <Send size={20} />
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  // Regular mode - with toggle button and fixed positioning
   return (
     <div className="font-sans">
       <div className="fixed bottom-5 right-5 z-50">

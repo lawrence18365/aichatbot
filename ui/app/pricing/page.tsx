@@ -1,14 +1,39 @@
-import type { Metadata } from 'next'
+'use client'
+
 import { Bot, Check, Zap, Users, Shield, Clock, Award, Star } from 'lucide-react'
 import Header from '@/components/layout/Header'
-
-export const metadata: Metadata = {
-  title: 'Pricing | Leadaisy AI Chatbot - Affordable Lead Capture & Customer Support',
-  description: 'Simple, transparent pricing for Leadaisy AI chatbot. Starting at $97/month for unlimited conversations and enterprise features. 30-day free trial.',
-  keywords: 'ai chatbot pricing, lead capture software cost, customer support automation price, chatbot subscription, business AI assistant pricing',
-}
+import { useState } from 'react'
 
 export default function PricingPage() {
+  const [isLoading, setIsLoading] = useState(false)
+  const [email, setEmail] = useState('')
+  const [showEmailForm, setShowEmailForm] = useState(false)
+
+  const handleCheckout = async () => {
+    if (!email) {
+      setShowEmailForm(true)
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      
+      const { checkoutUrl } = await response.json()
+      
+      // Redirect to Stripe
+      window.location.href = checkoutUrl
+    } catch (error) {
+      console.error('Checkout error:', error)
+      alert('Something went wrong. Please try again or contact support.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
   return (
     <div className="min-h-screen bg-white">
       <Header currentPage="pricing" />
@@ -85,9 +110,26 @@ export default function PricingPage() {
                 </div>
               </div>
 
-              <button className="w-full bg-gradient-to-r from-zinc-900 to-zinc-800 text-white py-5 rounded-2xl font-medium text-lg hover:from-zinc-800 hover:to-zinc-700 transition-all duration-300 shadow-xl hover:shadow-2xl relative overflow-hidden group">
+              {showEmailForm && (
+                <div className="mb-6">
+                  <input
+                    type="email"
+                    placeholder="Enter your email to get started"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-emerald-500 focus:outline-none text-zinc-900"
+                    onKeyPress={(e) => e.key === 'Enter' && handleCheckout()}
+                  />
+                </div>
+              )}
+              <button 
+                onClick={handleCheckout}
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-zinc-900 to-zinc-800 text-white py-5 rounded-2xl font-medium text-lg hover:from-zinc-800 hover:to-zinc-700 transition-all duration-300 shadow-xl hover:shadow-2xl relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed">
                 <span className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
-                <span className="relative">Get Started - $97/month</span>
+                <span className="relative">
+                  {isLoading ? 'Processing...' : 'Get Started - $97/month'}
+                </span>
               </button>
 
               <div className="text-center mt-8 space-y-2">
