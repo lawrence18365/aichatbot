@@ -192,7 +192,7 @@ def check_if_lead_completion_response(ai_response):
 @app.get("/api/health")
 async def health_check():
     """A simple endpoint to confirm the API is live."""
-    return {"status": "ok", "business_name": CLIENT_DATA['business_name']}
+    return {"status": "ok", "business_name": CLIENT_DATA['business_name'], "timestamp": datetime.now().isoformat()}
 
 @app.post("/api/chat")
 async def chat(request: Request, chat_request: ChatRequest):
