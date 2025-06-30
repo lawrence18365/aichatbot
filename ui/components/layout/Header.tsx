@@ -47,6 +47,14 @@ export default function Header({ currentPage = '' }: HeaderProps) {
               Pricing
             </a>
             <a
+              href="/blog"
+              className={`font-light transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded-md px-2 py-1 ${
+                currentPage === 'blog' ? 'text-zinc-900 font-medium' : 'text-stone-600 hover:text-zinc-900'
+              }`}
+            >
+              Blog
+            </a>
+            <a
               href="/about"
               className={`font-light transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded-md px-2 py-1 ${
                 currentPage === 'about' ? 'text-zinc-900 font-medium' : 'text-stone-600 hover:text-zinc-900'

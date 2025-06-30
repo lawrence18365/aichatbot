@@ -146,6 +146,12 @@ export default function Page() {
                 Pricing
               </a>
               <a
+                href="/blog"
+                className="text-stone-600 hover:text-zinc-900 font-light transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded-md px-2 py-1"
+              >
+                Blog
+              </a>
+              <a
                 href="/about"
                 className="text-stone-600 hover:text-zinc-900 font-light transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded-md px-2 py-1"
               >
