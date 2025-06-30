@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[project]
+name = "leadaisy-api"
+version = "1.0.0"
+description = "Leadaisy AI Chatbot API"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "openai",
+    "pydantic", 
+    "python-dotenv",
+    "email-validator"
+]
+
+[project.scripts]
+start = "uvicorn api:app --host 0.0.0.0"
