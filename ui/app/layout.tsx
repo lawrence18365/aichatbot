@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   icons: {
     icon: "/leadaisy-icon.svg",
   },
+  metadataBase: new URL('https://leadaisy.com'),
+  alternates: {
+    canonical: '/',
+  },
 };
 
 export default function RootLayout({
