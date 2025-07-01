@@ -6,7 +6,7 @@ import Header from '@/components/layout/Header'
 import { getBlogPost, getRelatedPosts, getAllBlogPosts } from '@/data/blog-posts'
 
 interface Props {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateStaticParams() {
