@@ -1,0 +1,16 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/chat/route": "app/api/chat/route.js",
+  "/api/checkout/route": "app/api/checkout/route.js",
+  "/api/health/route": "app/api/health/route.js",
+  "/page": "app/page.js",
+  "/pricing/page": "app/pricing/page.js",
+  "/widget/page": "app/widget/page.js",
+  "/about/page": "app/about/page.js",
+  "/features/page": "app/features/page.js",
+  "/help/page": "app/help/page.js",
+  "/privacy/page": "app/privacy/page.js",
+  "/terms/page": "app/terms/page.js",
+  "/blog/page": "app/blog/page.js",
+  "/blog/[slug]/page": "app/blog/[slug]/page.js"
+}
