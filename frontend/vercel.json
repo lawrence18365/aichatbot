@@ -1,0 +1,24 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "devCommand": "npm run dev:next",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "env": {
+    "BACKEND_URL": "@backend-url",
+    "NEXT_PUBLIC_INTERNAL_API_KEY": "@internal-api-key"
+  },
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.leadaisy.com"
+        }
+      ],
+      "destination": "https://leadaisy.com/:path*",
+      "permanent": true
+    }
+  ]
+}
