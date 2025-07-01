@@ -17,7 +17,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const post = getBlogPost(params.slug)
+  const { slug } = await params
+  const post = getBlogPost(slug)
   
   if (!post) {
     return {
@@ -27,19 +28,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${post.title} - Leadaisy`,
-    description: post.description,
-    keywords: post.keywords,
+    description: post.excerpt,
   }
 }
 
-export default function BlogPostPage({ params }: Props) {
-  const post = getBlogPost(params.slug)
+export default async function BlogPostPage({ params }: Props) {
+  const { slug } = await params
+  const post = getBlogPost(slug)
   
   if (!post) {
     notFound()
   }
 
-  const relatedPosts = getRelatedPosts(post.slug, post.relatedPosts)
+  const relatedPosts = getRelatedPosts(post.slug)
 
   const renderSection = (section: any, index: number) => {
     switch (section.type) {
