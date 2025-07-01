@@ -191,32 +191,14 @@ export default async function BlogPostPage({ params }: Props) {
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <div className="prose prose-lg max-w-none">
             
-            {/* Introduction */}
-            <p className="text-stone-600 mb-8 leading-relaxed text-lg">
-              {post.content.introduction}
-            </p>
-
-            {/* Dynamic Sections */}
-            {post.content.sections.map(renderSection)}
-
-            {/* Conclusion */}
-            <h2 className="font-serif text-3xl font-medium text-zinc-900 mb-6">Conclusion</h2>
-            <p className="text-stone-600 mb-8 leading-relaxed">
-              {post.content.conclusion}
-            </p>
-            
-            {/* CTA */}
-            {post.content.cta && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 not-prose">
-                <h3 className="font-serif text-xl font-medium text-zinc-900 mb-4">{post.content.cta.title}</h3>
-                <p className="text-stone-600 mb-6">
-                  {post.content.cta.description}
+            {/* Content */}
+            <div className="text-stone-600 leading-relaxed prose prose-lg max-w-none">
+              {post.content.split('\n\n').map((paragraph, index) => (
+                <p key={index} className="mb-6">
+                  {paragraph}
                 </p>
-                <Link href={post.content.cta.buttonLink} className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-xl font-medium hover:from-emerald-500 hover:to-teal-500 transition-all duration-300 inline-block">
-                  {post.content.cta.buttonText}
-                </Link>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         </div>
       </article>
